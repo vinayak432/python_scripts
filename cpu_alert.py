@@ -1,23 +1,29 @@
-#!/bin/bash
+#!/usr/bin/env python3
 
-THRESHOLD=80                # % CPU usage limit
-EMAIL="vinayakvk062@gmail.com"     # Email to notify
+import psutil
+import subprocess
+import time
 
-# Stress CPU for 1 minute
-stress --cpu 4 --timeout 60s &
+THRESHOLD = 80  # CPU usage %
+EMAIL = "vinayakvk062@gmail.com"
 
-# Check CPU usage every 5 seconds
-while true; do
-  CPU=$(mpstat 1 1 | awk '/Average/ && $12 ~ /[0-9.]+/ {print 100 - $12}')
-  CPU_INT=${CPU%.*}
+# Stress CPU for 1 minute (same as bash)
+subprocess.Popen(["stress", "--cpu", "4", "--timeout", "60s"])
 
-  echo "CPU Usage: $CPU%"
+print("Monitoring CPU usage...")
 
-  if [ "$CPU_INT" -gt "$THRESHOLD" ]; then
-    echo "High CPU usage: $CPU%" | mail -s "CPU Alert!" "$EMAIL"
-    echo "Email sent to $EMAIL"
-    break
-  fi
+while True:
+    cpu = psutil.cpu_percent(interval=1)
+    print(f"CPU Usage: {cpu}%")
 
-  sleep 5
-done
+    if cpu > THRESHOLD:
+        message = f"High CPU usage detected: {cpu}%"
+        subprocess.run(
+            ["mail", "-s", "CPU Alert!", EMAIL],
+            input=message,
+            text=True
+        )
+        print(f"Email sent to {EMAIL}")
+        break
+
+    time.sleep(5)
